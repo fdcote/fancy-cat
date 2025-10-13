@@ -6,18 +6,21 @@ const fzwatch = @import("fzwatch");
 const Config = @import("config/Config.zig");
 const DocumentHandler = @import("handlers/DocumentHandler.zig");
 const Cache = @import("./Cache.zig");
+const ReloadIndicatorTimer = @import("services/ReloadIndicatorTimer.zig");
 
 pub const panic = vaxis.panic_handler;
 
-const Event = union(enum) {
+pub const Event = union(enum) {
     key_press: vaxis.Key,
     mouse: vaxis.Mouse,
     winsize: vaxis.Winsize,
     file_changed,
+    reload_done: usize,
 };
 
 pub const ModeType = enum { view, command };
 pub const Mode = union(ModeType) { view: ViewMode, command: CommandMode };
+pub const ReloadIndicatorState = enum { idle, reload };
 
 pub const Context = struct {
     const Self = @This();
@@ -39,6 +42,8 @@ pub const Context = struct {
     cache: Cache,
     should_check_cache: bool,
     unicode: vaxis.Unicode,
+    reload_indicator_timer: ReloadIndicatorTimer,
+    current_reload_indicator_state: ReloadIndicatorState,
     buf: []u8,
 
     pub fn init(allocator: std.mem.Allocator, args: [][:0]u8) !Self {
@@ -65,6 +70,7 @@ pub const Context = struct {
         const buf = try allocator.alloc(u8, 4096);
         const tty = try vaxis.Tty.init(buf);
         const unicode = try vaxis.Unicode.init(allocator);
+        const reload_indicator_timer = ReloadIndicatorTimer.init(config);
 
         return .{
             .allocator = allocator,
@@ -84,6 +90,8 @@ pub const Context = struct {
             .cache = Cache.init(allocator, config, vx, &tty),
             .should_check_cache = config.cache.enabled,
             .unicode = unicode,
+            .reload_indicator_timer = reload_indicator_timer,
+            .current_reload_indicator_state = .idle,
             .buf = buf,
         };
     }
@@ -104,6 +112,7 @@ pub const Context = struct {
         self.allocator.destroy(self.config);
         self.arena.deinit();
         self.unicode.deinit(self.allocator);
+        self.reload_indicator_timer.deinit();
         self.cache.deinit();
         self.document_handler.deinit();
         self.vx.deinit(self.allocator, self.tty.anyWriter());
@@ -140,6 +149,9 @@ pub const Context = struct {
         try self.vx.setMouseMode(self.tty.anyWriter(), true);
 
         if (self.config.file_monitor.enabled) {
+            if (self.config.status_bar.enabled and self.config.file_monitor.reload_indicator_duration > 0) {
+                try self.reload_indicator_timer.start(&loop);
+            }
             if (self.watcher) |*w| {
                 w.setCallback(callback, &loop);
                 self.watcher_thread = try std.Thread.spawn(.{}, watcherWorker, .{ self, w });
@@ -206,6 +218,14 @@ pub const Context = struct {
                 try self.document_handler.reloadDocument();
                 self.cache.clear();
                 self.reload_page = true;
+
+                if (self.config.status_bar.enabled and self.config.file_monitor.reload_indicator_duration > 0) {
+                    self.current_reload_indicator_state = .reload;
+                    self.reload_indicator_timer.notifyChange();
+                }
+            },
+            .reload_done => {
+                self.current_reload_indicator_state = .idle;
             },
         }
     }
@@ -317,6 +337,12 @@ pub const Context = struct {
                     switch (self.current_mode) {
                         .view => try expandPlaceholders(&expanded_items, mode_aware.view),
                         .command => try expandPlaceholders(&expanded_items, mode_aware.command),
+                    }
+                },
+                .reload_aware => |reload_aware| {
+                    switch (self.current_reload_indicator_state) {
+                        .reload => try expandPlaceholders(&expanded_items, reload_aware.reload),
+                        .idle => try expandPlaceholders(&expanded_items, reload_aware.idle),
                     }
                 },
             }
