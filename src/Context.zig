@@ -21,7 +21,7 @@ pub const Event = union(enum) {
 
 pub const ModeType = enum { view, command };
 pub const Mode = union(ModeType) { view: ViewMode, command: CommandMode };
-pub const ReloadIndicatorState = enum { idle, reload };
+pub const ReloadIndicatorState = enum { idle, reload, watching };
 
 pub const Context = struct {
     const Self = @This();
@@ -162,6 +162,7 @@ pub const Context = struct {
                         if (item == .reload_aware) {
                             try self.reload_indicator_timer.start(&loop);
                             self.reload_indicator_active = true;
+                            self.current_reload_indicator_state = .watching;
                             break;
                         }
                     }
@@ -235,7 +236,7 @@ pub const Context = struct {
                 }
             },
             .reload_done => {
-                self.current_reload_indicator_state = .idle;
+                self.current_reload_indicator_state = .watching;
             },
         }
     }
@@ -354,8 +355,9 @@ pub const Context = struct {
                 },
                 .reload_aware => |reload_aware| {
                     switch (self.current_reload_indicator_state) {
-                        .reload => try expandPlaceholders(&expanded_items, reload_aware.reload),
                         .idle => try expandPlaceholders(&expanded_items, reload_aware.idle),
+                        .reload => try expandPlaceholders(&expanded_items, reload_aware.reload),
+                        .watching => try expandPlaceholders(&expanded_items, reload_aware.watching),
                     }
                 },
             }
