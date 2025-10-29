@@ -19,15 +19,15 @@ fancy-cat <path-to-pdf> <optional-page-number>
 
 ### Commands
 
-fancy-cat uses a modal interface similar to Neovim. There are two modes: view mode and command mode. To enter command mode you type `:` by default (this can be changed in the config file)
+fancy-cat uses a modal interface similar to Neovim. There are two modes: view mode and command mode. To enter command mode you type `:` by default (this can be changed in the config file).
 
-Documentation on the available commands can be found [here](./docs/commands.md)
+Documentation on the available commands can be found [here](./docs/commands.md).
 
 ### Configuration
 
-fancy-cat can be configured through a JSON config file located at `~/.config/fancy-cat/config.json`. The file is automatically created on the first run with default settings.
+fancy-cat can be configured through a JSON configuration file located in one of several locations (primary `$XDG_CONFIG_HOME/fancy-cat/config.json`, fallback `$HOME/.config/fancy-cat/config.json`, legacy `$HOME/.fancy-cat`). An empty configuration file is automatically created in the primary or fallback location on the first run.
 
-The default `config.json` and documentation can be found [here](./docs/config.md)
+An example `config.json` and documentation can be found [here](./docs/config.md).
 
 ## Installation
 
