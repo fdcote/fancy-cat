@@ -5,6 +5,7 @@ const Context = @import("../Context.zig").Context;
 const Config = @import("../config/Config.zig");
 const ViewMode = @import("./ViewMode.zig");
 const TextInput = vaxis.widgets.TextInput;
+const Utilities = @import("../utilities/Utilities.zig");
 
 context: *Context,
 text_input: TextInput,
@@ -140,8 +141,8 @@ fn handleZoom(self: *Self, cmd: []const u8) bool {
 
     const number_str = cmd[0 .. cmd.len - 1];
     if (std.fmt.parseFloat(f32, number_str)) |percent| {
-        // TODO detect DPI
-        const dpi = self.context.document_handler.pdf_handler.config.general.dpi;
+        var dpi = self.context.document_handler.pdf_handler.config.general.dpi;
+        if (self.context.document_handler.pdf_handler.config.general.detect_dpi) dpi = Utilities.getDPI(dpi);
         const zoom_factor = (percent * dpi) / 7200.0;
         self.context.document_handler.setZoom(zoom_factor);
         self.context.resetCurrentPage();
