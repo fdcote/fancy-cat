@@ -56,7 +56,7 @@ pub const Context = struct {
 
         const config = try allocator.create(Config);
         errdefer allocator.destroy(config);
-        config.* = try Config.init(allocator);
+        config.* = Config.init(allocator);
         errdefer config.deinit();
 
         var document_handler = try DocumentHandler.init(allocator, path, initial_page, config);
