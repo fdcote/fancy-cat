@@ -1,16 +1,30 @@
 # Configuration
 
-On startup, fancy-cat looks for a configuration file at:
+On startup, fancy-cat looks for a configuration file in the following locations:
+
+**Primary**
 
 ```
-~/.config/fancy-cat/config.json
+$XDG_CONFIG_HOME/fancy-cat/config.json
 ```
 
-If no configuration file is found, fancy-cat creates an empty one. Since fancy-cat comes with sensible defaults, you only need to add the options you want to change.
+**Fallback**
+
+```
+$HOME/.config/fancy-cat/config.json
+```
+
+**Legacy**
+
+```
+$HOME/.fancy-cat
+```
+
+If no configuration file is found in any of these locations, fancy-cat creates an empty configuration file in the primary or fallback location.
 
 ## Defaults
 
-Below is an example configuration file that replicates the default settings. You can use it as a starting point for your customizations:
+Because fancy-cat provides sensible defaults, you only need to specify the options you wish to override. Below is an example configuration file that replicates the default settings. You can use this example as a starting point for your customizations:
 
 ```json
 {
@@ -80,6 +94,7 @@ The rest of this reference provides detailed explanations for each configuration
 - [File Monitor](#file-monitor)
 - [General](#general)
   - [Color](#color)
+  - [History](#history)
 - [Status Bar](#status-bar)
   - [Style](#style)
     - [Underline](#underline)
@@ -209,6 +224,30 @@ The following color formats are supported:
 | :---  | :--- |
 | `"#RRGGBB"` or `"0xRRGGBB"` | `RR`, `GG`, and `BB` are two-digit hexadecimal values |
 | `{ "rgb": [R, G, B] }` | `R`, `G`, and `B` are integers between 0 and 255 |
+
+### History
+
+To ensure persistence across sessions, fancy-cat saves its command history in one of the following locations:
+
+**Primary**
+
+```
+$XDG_STATE_HOME/fancy-cat/history
+```
+
+**Fallback**
+
+```
+$HOME/.local/state/fancy-cat/history
+```
+
+**Legacy**
+
+```
+$HOME/.fancy-cat_history
+```
+>[!NOTE]
+>The legacy location is only used if the [configuration file](#configuration) itself is located at `$HOME/.fancy-cat`.
 
 ---
 
